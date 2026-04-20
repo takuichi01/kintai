@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CurrentDateTime from "@/components/CurrentDateTime";
 import CopyButton from "@/components/CopyButton";
 
 type AttendanceContext = {
   template: {
-    title: string;
+    opening: string;
     items: string[];
   } | null;
   previousTodos: string[];
@@ -18,13 +19,13 @@ function buildCheckinMessage(context: AttendanceContext): string {
       ? context.previousTodos.map((todo) => `• ${todo}`).join("\n")
       : "• 前回稼働日のTODOはありません";
 
-  const templateTitle = context.template?.title ?? "出勤テンプレート未設定";
-  const templateItems =
+  const opening = context.template?.opening.trim() || "（出勤テンプレートの冒頭が未設定です）";
+  const supplement =
     context.template?.items.length
-      ? context.template.items.map((item) => `• ${item}`).join("\n")
-      : "• 設定画面でテンプレートを登録してください";
+      ? `\n\n■ 補足\n${context.template.items.map((item) => `• ${item}`).join("\n")}`
+      : "";
 
-  return `【出勤】\nおはようございます。本日もよろしくお願いします。\n\n■ 本日のTODO\n${todos}\n\n■ ${templateTitle}\n${templateItems}`;
+  return `${opening}\n\n■ 本日のTODO\n${todos}${supplement}`;
 }
 
 export default function HomePage() {
@@ -68,6 +69,7 @@ export default function HomePage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">出勤画面</h1>
+      <CurrentDateTime />
       <button
         type="button"
         className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"

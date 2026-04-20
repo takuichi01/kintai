@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import CurrentDateTime from "@/components/CurrentDateTime";
 import WorkReportForm from "@/components/WorkReportForm";
 import type { BreakReportInput, WorkReportInput } from "@/lib/db";
 
@@ -73,6 +74,7 @@ export default function WorkReportPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">作業報告</h1>
+      <CurrentDateTime />
       {loadError ? <p className="text-sm text-red-600">{loadError}</p> : null}
       <div className="flex gap-2">
         <button

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const template = saveTemplate({
     type: body.type,
-    title: body.title,
+    opening: body.opening,
     items: body.items ?? [],
   });
 
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest) {
   const template = saveTemplate({
     id: body.id,
     type: body.type,
-    title: body.title,
+    opening: body.opening,
     items: body.items ?? [],
   });
 

@@ -6,7 +6,7 @@ import type { TemplateType } from "@/lib/db";
 export type TemplatePayload = {
   id?: number;
   type: TemplateType;
-  title: string;
+  opening: string;
   items: string[];
 };
 
@@ -18,7 +18,7 @@ type Props = {
 };
 
 export default function TemplateForm({ type, initialValue, onSave, onCancel }: Props) {
-  const [title, setTitle] = useState(initialValue?.title ?? "");
+  const [opening, setOpening] = useState(initialValue?.opening ?? "");
   const [items, setItems] = useState<string[]>(
     initialValue?.items.length ? initialValue.items : [""],
   );
@@ -42,11 +42,11 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
       await onSave({
         id: initialValue?.id,
         type,
-        title: title.trim(),
+        opening: opening.trim(),
         items,
       });
       if (!initialValue) {
-        setTitle("");
+        setOpening("");
         setItems([""]);
       }
     } finally {
@@ -59,9 +59,9 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
       <h3 className="font-semibold">{initialValue ? `${heading}編集` : `${heading}新規作成`}</h3>
       <input
         className="w-full rounded border px-3 py-2"
-        placeholder="タイトル"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        placeholder="冒頭テキストを入力（例: おはようございます。本日もよろしくお願いします。）"
+        value={opening}
+        onChange={(e) => setOpening(e.target.value)}
         required
       />
       <div className="space-y-2">
@@ -69,7 +69,7 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
           <div className="flex gap-2" key={`${type}-${index}`}>
             <input
               className="flex-1 rounded border px-3 py-2"
-              placeholder="箇条書き項目"
+              placeholder="補足"
               value={item}
               onChange={(e) => updateItem(index, e.target.value)}
             />
@@ -85,7 +85,7 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
         ))}
       </div>
       <button type="button" onClick={addItem} className="rounded border px-3 py-2">
-        項目追加
+        補足追加
       </button>
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className="rounded bg-blue-600 px-4 py-2 text-white">

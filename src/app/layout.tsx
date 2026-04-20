@@ -26,6 +26,9 @@ export default function RootLayout({
             <Link href="/settings" className="text-blue-700 hover:underline">
               設定
             </Link>
+            <Link href="/attendance" className="text-blue-700 hover:underline">
+              勤怠一覧
+            </Link>
           </nav>
         </header>
         <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
