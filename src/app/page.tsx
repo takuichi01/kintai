@@ -40,7 +40,8 @@ export default function HomePage() {
       const res = await fetch("/api/attendance?action=checkin-context", { cache: "no-store" });
       const data = (await res.json()) as AttendanceContext;
       setMessage(buildCheckinMessage(data));
-    } catch {
+    } catch (error) {
+      console.error(error);
       setError("文章の生成に失敗しました");
     } finally {
       setLoading(false);

@@ -66,7 +66,7 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
       />
       <div className="space-y-2">
         {items.map((item, index) => (
-          <div className="flex gap-2" key={`${index}-${type}`}>
+          <div className="flex gap-2" key={`${type}-${index}`}>
             <input
               className="flex-1 rounded border px-3 py-2"
               placeholder="箇条書き項目"

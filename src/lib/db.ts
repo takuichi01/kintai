@@ -145,7 +145,7 @@ export function saveTemplate(params: {
 }): Template {
   const cleanedItems = params.items
     .map((item) => item.trim())
-    .filter((item): item is string => item.length > 0);
+    .filter((item) => item.length > 0);
 
   if (params.id) {
     db.prepare("UPDATE templates SET type = ?, title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(

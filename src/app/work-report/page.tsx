@@ -28,14 +28,22 @@ export default function WorkReportPage() {
   const [breakReports, setBreakReports] = useState<BreakReportInput[]>([defaultBreak]);
   const [todos, setTodos] = useState<string[]>([""]);
   const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch("/api/work-reports", { cache: "no-store" });
-      const data = await res.json();
-      if (data.workReports?.length) setWorkReports(data.workReports);
-      if (data.breakReports?.length) setBreakReports(data.breakReports);
-      if (data.todos?.length) setTodos(data.todos);
+      try {
+        const res = await fetch("/api/work-reports", { cache: "no-store" });
+        if (!res.ok) {
+          throw new Error("作業報告の取得に失敗しました");
+        }
+        const data = await res.json();
+        if (data.workReports?.length) setWorkReports(data.workReports);
+        if (data.breakReports?.length) setBreakReports(data.breakReports);
+        if (data.todos?.length) setTodos(data.todos);
+      } catch {
+        setLoadError("保存済みデータの読み込みに失敗しました");
+      }
     };
 
     load();
@@ -54,6 +62,7 @@ export default function WorkReportPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">作業報告</h1>
+      {loadError ? <p className="text-sm text-red-600">{loadError}</p> : null}
       <div className="flex gap-2">
         <button
           type="button"

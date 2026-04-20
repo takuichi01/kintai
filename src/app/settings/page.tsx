@@ -15,18 +15,30 @@ export default function SettingsPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [editing, setEditing] = useState<Template | null>(null);
   const [creatingType, setCreatingType] = useState<TemplateType | null>(null);
+  const [loadError, setLoadError] = useState("");
 
   const loadTemplates = async () => {
     const res = await fetch("/api/templates", { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error("テンプレートの取得に失敗しました");
+    }
     const data = await res.json();
     setTemplates(data.templates ?? []);
   };
 
   useEffect(() => {
     fetch("/api/templates", { cache: "no-store" })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("テンプレートの取得に失敗しました");
+        }
+        return res.json();
+      })
       .then((data) => {
         setTemplates(data.templates ?? []);
+      })
+      .catch(() => {
+        setLoadError("テンプレートの読み込みに失敗しました");
       });
   }, []);
 
@@ -46,7 +58,12 @@ export default function SettingsPage() {
     });
     setEditing(null);
     setCreatingType(null);
-    await loadTemplates();
+    try {
+      await loadTemplates();
+      setLoadError("");
+    } catch {
+      setLoadError("テンプレートの再読み込みに失敗しました");
+    }
   };
 
   const removeTemplate = async (id: number) => {
@@ -55,7 +72,12 @@ export default function SettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    await loadTemplates();
+    try {
+      await loadTemplates();
+      setLoadError("");
+    } catch {
+      setLoadError("テンプレートの再読み込みに失敗しました");
+    }
   };
 
   const renderSection = (type: TemplateType) => (
@@ -127,6 +149,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">設定</h1>
+      {loadError ? <p className="text-sm text-red-600">{loadError}</p> : null}
       {renderSection("checkin")}
       {renderSection("checkout")}
     </div>
