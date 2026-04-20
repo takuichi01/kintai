@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import CurrentDateTime from "@/components/CurrentDateTime";
 import CopyButton from "@/components/CopyButton";
 
 type CheckoutContext = {
   template: {
-    title: string;
+    opening: string;
     items: string[];
   } | null;
   workReports: {
@@ -24,13 +25,13 @@ function buildCheckoutMessage(context: CheckoutContext): string {
           .join("\n")
       : "• 本日の作業報告はありません";
 
-  const templateTitle = context.template?.title ?? "退勤テンプレート未設定";
-  const templateLines =
+  const opening = context.template?.opening.trim() || "（退勤テンプレートの冒頭が未設定です）";
+  const supplement =
     context.template?.items.length
-      ? context.template.items.map((item) => `• ${item}`).join("\n")
-      : "• 設定画面でテンプレートを登録してください";
+      ? `\n\n■ 補足\n${context.template.items.map((item) => `• ${item}`).join("\n")}`
+      : "";
 
-  return `【退勤】\nお疲れ様でした。本日の作業報告です。\n\n■ 本日の作業内容\n${workLines}\n\n■ ${templateTitle}\n${templateLines}`;
+  return `${opening}\n\n■ 本日の作業内容\n${workLines}${supplement}`;
 }
 
 export default function LeaveReportPage() {
@@ -68,6 +69,7 @@ export default function LeaveReportPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">退勤前報告</h1>
+      <CurrentDateTime />
       {message ? (
         <div className="space-y-3 rounded border bg-white p-4">
           <pre className="whitespace-pre-wrap">{message}</pre>

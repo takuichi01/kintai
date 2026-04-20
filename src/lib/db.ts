@@ -17,8 +17,8 @@ db.pragma("foreign_keys = ON");
 db.exec(`
 CREATE TABLE IF NOT EXISTS templates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL,
-  title TEXT NOT NULL,
+  type TEXT NOT NULL UNIQUE,
+  opening TEXT NOT NULL DEFAULT '',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -70,11 +70,51 @@ CREATE TABLE IF NOT EXISTS todos (
 );
 `);
 
+const templateColumns = db.prepare("PRAGMA table_info(templates)").all() as { name: string }[];
+const hasOpeningColumn = templateColumns.some((column) => column.name === "opening");
+const hasTitleColumn = templateColumns.some((column) => column.name === "title");
+
+if (!hasOpeningColumn) {
+  db.exec("ALTER TABLE templates ADD COLUMN opening TEXT DEFAULT ''");
+}
+
+if (hasTitleColumn) {
+  db.exec("UPDATE templates SET opening = title WHERE opening = ''");
+}
+
+db.exec("UPDATE templates SET opening = '' WHERE opening IS NULL");
+
+db.exec(`
+  DELETE FROM templates
+  WHERE id NOT IN (
+    SELECT t.id
+    FROM templates t
+    WHERE t.id = (
+      SELECT t2.id
+      FROM templates t2
+      WHERE t2.type = t.type
+      ORDER BY t2.updated_at DESC, t2.id DESC
+      LIMIT 1
+    )
+  );
+`);
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS templates_type_unique_idx ON templates(type)");
+
 export type Template = {
   id: number;
   type: TemplateType;
-  title: string;
+  opening: string;
   items: string[];
+};
+
+export type MonthlyRecord = {
+  date: string;
+  checkin_at: string | null;
+  checkout_at: string | null;
+  breaks: {
+    start_time: string | null;
+    end_time: string | null;
+  }[];
 };
 
 export type WorkReportInput = {
@@ -115,12 +155,12 @@ export function getOrCreateAttendance(date = getTodayDate()): number {
 export function getTemplates(type?: TemplateType): Template[] {
   const rows = (type
     ? db
-        .prepare("SELECT id, type, title FROM templates WHERE type = ? ORDER BY updated_at DESC, id DESC")
+        .prepare("SELECT id, type, opening FROM templates WHERE type = ? ORDER BY updated_at DESC, id DESC")
         .all(type)
-    : db.prepare("SELECT id, type, title FROM templates ORDER BY updated_at DESC, id DESC").all()) as {
+    : db.prepare("SELECT id, type, opening FROM templates ORDER BY updated_at DESC, id DESC").all()) as {
     id: number;
     type: TemplateType;
-    title: string;
+    opening: string;
   }[];
 
   const itemStmt = db
@@ -140,37 +180,42 @@ export function getLatestTemplate(type: TemplateType): Template | null {
 export function saveTemplate(params: {
   id?: number;
   type: TemplateType;
-  title: string;
+  opening: string;
   items: string[];
 }): Template {
+  const opening = params.opening.trim();
   const cleanedItems = params.items
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
 
   if (params.id) {
-    db.prepare("UPDATE templates SET type = ?, title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+    db.prepare("UPDATE templates SET type = ?, opening = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
       params.type,
-      params.title,
+      opening,
       params.id,
     );
-    db.prepare("DELETE FROM template_items WHERE template_id = ?").run(params.id);
-
-    const insertItem = db.prepare(
-      "INSERT INTO template_items (template_id, content, order_index) VALUES (?, ?, ?)",
-    );
-    cleanedItems.forEach((content, index) => {
-      insertItem.run(params.id, content, index);
-    });
-
-    const updatedTemplate = getTemplates().find((template) => template.id === params.id);
-    if (!updatedTemplate) {
-      throw new Error("テンプレートの更新に失敗しました");
-    }
-    return updatedTemplate;
+  } else {
+    db.prepare(
+      `
+      INSERT INTO templates (type, opening, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(type)
+      DO UPDATE SET
+        opening = excluded.opening,
+        updated_at = CURRENT_TIMESTAMP
+      `,
+    ).run(params.type, opening);
   }
 
-  const result = db.prepare("INSERT INTO templates (type, title) VALUES (?, ?)").run(params.type, params.title);
-  const templateId = Number(result.lastInsertRowid);
+  const templateRow = db.prepare("SELECT id FROM templates WHERE type = ? LIMIT 1").get(params.type) as
+    | { id: number }
+    | undefined;
+  if (!templateRow) {
+    throw new Error("テンプレートの保存に失敗しました");
+  }
+
+  const templateId = templateRow.id;
+  db.prepare("DELETE FROM template_items WHERE template_id = ?").run(templateId);
 
   const insertItem = db.prepare(
     "INSERT INTO template_items (template_id, content, order_index) VALUES (?, ?, ?)",
@@ -179,11 +224,11 @@ export function saveTemplate(params: {
     insertItem.run(templateId, content, index);
   });
 
-  const createdTemplate = getTemplates().find((template) => template.id === templateId);
-  if (!createdTemplate) {
-    throw new Error("テンプレートの作成に失敗しました");
+  const savedTemplate = getTemplates().find((template) => template.id === templateId);
+  if (!savedTemplate) {
+    throw new Error("テンプレートの保存に失敗しました");
   }
-  return createdTemplate;
+  return savedTemplate;
 }
 
 export function deleteTemplate(id: number): void {
@@ -321,6 +366,38 @@ export function saveTodosForToday(todos: string[], date = getTodayDate()): { att
     });
 
   return { attendanceId };
+}
+
+export function getMonthlyAttendance(year: number, month: number): MonthlyRecord[] {
+  const monthText = `${month}`.padStart(2, "0");
+  const startDate = `${year}-${monthText}-01`;
+
+  const nextMonthDate = new Date(year, month, 1);
+  const nextYear = nextMonthDate.getFullYear();
+  const nextMonthText = `${nextMonthDate.getMonth() + 1}`.padStart(2, "0");
+  const endDate = `${nextYear}-${nextMonthText}-01`;
+
+  const records = db
+    .prepare(
+      "SELECT id, date, checkin_at, checkout_at FROM attendance WHERE date >= ? AND date < ? ORDER BY date ASC, id ASC",
+    )
+    .all(startDate, endDate) as {
+    id: number;
+    date: string;
+    checkin_at: string | null;
+    checkout_at: string | null;
+  }[];
+
+  const breakStmt = db.prepare(
+    "SELECT start_time, end_time FROM break_reports WHERE attendance_id = ? ORDER BY order_index ASC, id ASC",
+  );
+
+  return records.map((record) => ({
+    date: record.date,
+    checkin_at: record.checkin_at,
+    checkout_at: record.checkout_at,
+    breaks: breakStmt.all(record.id) as { start_time: string | null; end_time: string | null }[],
+  }));
 }
 
 export default db;
