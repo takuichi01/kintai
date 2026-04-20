@@ -29,6 +29,7 @@ export default function WorkReportPage() {
   const [todos, setTodos] = useState<string[]>([""]);
   const [message, setMessage] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -51,13 +52,22 @@ export default function WorkReportPage() {
   }, []);
 
   const save = async () => {
-    await fetch("/api/work-reports", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workReports, breakReports, todos }),
-    });
-    setMessage("保存しました");
-    setTimeout(() => setMessage(""), 1500);
+    try {
+      const res = await fetch("/api/work-reports", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workReports, breakReports, todos }),
+      });
+      if (!res.ok) {
+        throw new Error("保存に失敗しました");
+      }
+      setSaveError("");
+      setMessage("保存しました");
+      setTimeout(() => setMessage(""), 1500);
+    } catch (error) {
+      console.error(error);
+      setSaveError("保存に失敗しました");
+    }
   };
 
   return (
@@ -194,6 +204,7 @@ export default function WorkReportPage() {
         </button>
       </div>
       {message ? <p className="text-sm text-green-700">{message}</p> : null}
+      {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
     </div>
   );
 }

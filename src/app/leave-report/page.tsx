@@ -36,6 +36,7 @@ function buildCheckoutMessage(context: CheckoutContext): string {
 export default function LeaveReportPage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -48,12 +49,20 @@ export default function LeaveReportPage() {
   }, []);
 
   const complete = async () => {
-    await fetch("/api/attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "checkout" }),
-    });
-    router.push("/");
+    try {
+      const res = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "checkout" }),
+      });
+      if (!res.ok) {
+        throw new Error("退勤記録に失敗しました");
+      }
+      router.push("/");
+    } catch (fetchError) {
+      console.error(fetchError);
+      setError("退勤記録に失敗しました");
+    }
   };
 
   return (
@@ -72,6 +81,7 @@ export default function LeaveReportPage() {
       ) : (
         <p className="text-sm text-gray-600">文章を生成しています...</p>
       )}
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
   );
 }

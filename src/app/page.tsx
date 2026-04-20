@@ -49,12 +49,20 @@ export default function HomePage() {
   };
 
   const onComplete = async () => {
-    await fetch("/api/attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "checkin" }),
-    });
-    router.push("/work-report");
+    try {
+      const res = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "checkin" }),
+      });
+      if (!res.ok) {
+        throw new Error("出勤記録に失敗しました");
+      }
+      router.push("/work-report");
+    } catch (error) {
+      console.error(error);
+      setError("出勤記録に失敗しました");
+    }
   };
 
   return (
