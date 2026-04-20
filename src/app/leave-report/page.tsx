@@ -44,7 +44,7 @@ export default function LeaveReportPage() {
       setMessage(buildCheckoutMessage(data));
     };
 
-    void load();
+    load();
   }, []);
 
   const complete = async () => {

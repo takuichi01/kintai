@@ -94,7 +94,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   className="rounded border px-3 py-1"
-                  onClick={() => void removeTemplate(template.id)}
+                  onClick={() => removeTemplate(template.id)}
                 >
                   削除
                 </button>

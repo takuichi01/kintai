@@ -38,7 +38,7 @@ export default function WorkReportPage() {
       if (data.todos?.length) setTodos(data.todos);
     };
 
-    void load();
+    load();
   }, []);
 
   const save = async () => {
