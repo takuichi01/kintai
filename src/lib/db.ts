@@ -70,32 +70,35 @@ CREATE TABLE IF NOT EXISTS todos (
 );
 `);
 
-try {
-  db.exec("ALTER TABLE templates ADD COLUMN opening TEXT NOT NULL DEFAULT ''");
-  db.exec("UPDATE templates SET opening = title WHERE opening = ''");
-} catch {
-  // no-op
+const templateColumns = db.prepare("PRAGMA table_info(templates)").all() as { name: string }[];
+const hasOpeningColumn = templateColumns.some((column) => column.name === "opening");
+const hasTitleColumn = templateColumns.some((column) => column.name === "title");
+
+if (!hasOpeningColumn) {
+  db.exec("ALTER TABLE templates ADD COLUMN opening TEXT DEFAULT ''");
 }
 
-try {
-  db.exec(`
-    DELETE FROM templates
-    WHERE id NOT IN (
-      SELECT t.id
-      FROM templates t
-      WHERE t.id = (
-        SELECT t2.id
-        FROM templates t2
-        WHERE t2.type = t.type
-        ORDER BY t2.updated_at DESC, t2.id DESC
-        LIMIT 1
-      )
-    );
-  `);
-  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS templates_type_unique_idx ON templates(type)");
-} catch {
-  // no-op
+if (hasTitleColumn) {
+  db.exec("UPDATE templates SET opening = title WHERE opening = ''");
 }
+
+db.exec("UPDATE templates SET opening = '' WHERE opening IS NULL");
+
+db.exec(`
+  DELETE FROM templates
+  WHERE id NOT IN (
+    SELECT t.id
+    FROM templates t
+    WHERE t.id = (
+      SELECT t2.id
+      FROM templates t2
+      WHERE t2.type = t.type
+      ORDER BY t2.updated_at DESC, t2.id DESC
+      LIMIT 1
+    )
+  );
+`);
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS templates_type_unique_idx ON templates(type)");
 
 export type Template = {
   id: number;

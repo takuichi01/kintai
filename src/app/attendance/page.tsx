@@ -34,6 +34,7 @@ function formatDateLabel(dateKey: string): string {
 
 function formatDateTimeToHourMinute(value: string | null): string {
   if (!value) return "-";
+  if (/^\d{2}:\d{2}$/.test(value)) return value;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleTimeString("ja-JP", {
@@ -42,6 +43,11 @@ function formatDateTimeToHourMinute(value: string | null): string {
     hour12: false,
     timeZone: "Asia/Tokyo",
   });
+}
+
+function formatBreakTime(value: string | null): string {
+  const formatted = formatDateTimeToHourMinute(value);
+  return formatted === "-" ? "--:--" : formatted;
 }
 
 export default function AttendancePage() {
@@ -127,7 +133,10 @@ export default function AttendancePage() {
               const breakText =
                 record?.breaks?.length
                   ? record.breaks
-                      .map((breakRecord) => `${breakRecord.start_time || "--:--"}〜${breakRecord.end_time || "--:--"}`)
+                      .map(
+                        (breakRecord) =>
+                          `${formatBreakTime(breakRecord.start_time)}〜${formatBreakTime(breakRecord.end_time)}`,
+                      )
                       .join("\n")
                   : "-";
 
