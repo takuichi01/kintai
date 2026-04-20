@@ -37,7 +37,8 @@ export default function SettingsPage() {
       .then((data) => {
         setTemplates(data.templates ?? []);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error(error);
         setLoadError("テンプレートの読み込みに失敗しました");
       });
   }, []);

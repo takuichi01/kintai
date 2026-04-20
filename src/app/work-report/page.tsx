@@ -41,7 +41,8 @@ export default function WorkReportPage() {
         if (data.workReports?.length) setWorkReports(data.workReports);
         if (data.breakReports?.length) setBreakReports(data.breakReports);
         if (data.todos?.length) setTodos(data.todos);
-      } catch {
+      } catch (error) {
+        console.error(error);
         setLoadError("保存済みデータの読み込みに失敗しました");
       }
     };
