@@ -162,7 +162,11 @@ export function saveTemplate(params: {
       insertItem.run(params.id, content, index);
     });
 
-    return getTemplates().find((template) => template.id === params.id)!;
+    const updatedTemplate = getTemplates().find((template) => template.id === params.id);
+    if (!updatedTemplate) {
+      throw new Error("テンプレートの更新に失敗しました");
+    }
+    return updatedTemplate;
   }
 
   const result = db.prepare("INSERT INTO templates (type, title) VALUES (?, ?)").run(params.type, params.title);
@@ -175,7 +179,11 @@ export function saveTemplate(params: {
     insertItem.run(templateId, content, index);
   });
 
-  return getTemplates().find((template) => template.id === templateId)!;
+  const createdTemplate = getTemplates().find((template) => template.id === templateId);
+  if (!createdTemplate) {
+    throw new Error("テンプレートの作成に失敗しました");
+  }
+  return createdTemplate;
 }
 
 export function deleteTemplate(id: number): void {
