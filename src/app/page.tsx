@@ -7,7 +7,7 @@ import CopyButton from "@/components/CopyButton";
 
 type AttendanceContext = {
   template: {
-    opening: string;
+    title: string;
     items: string[];
   } | null;
   previousTodos: string[];
@@ -19,7 +19,7 @@ function buildCheckinMessage(context: AttendanceContext): string {
       ? context.previousTodos.map((todo) => `• ${todo}`).join("\n")
       : "• 前回稼働日のTODOはありません";
 
-  const opening = context.template?.opening.trim() || "（出勤テンプレートの冒頭が未設定です）";
+  const opening = context.template?.title.trim() || "（出勤テンプレートの冒頭が未設定です）";
   const supplement =
     context.template?.items.length
       ? `\n\n■ 補足\n${context.template.items.map((item) => `• ${item}`).join("\n")}`
@@ -81,7 +81,12 @@ export default function HomePage() {
       {error ? <p className="text-red-600">{error}</p> : null}
       {message ? (
         <div className="space-y-3 rounded border bg-white p-4">
-          <pre className="whitespace-pre-wrap">{message}</pre>
+          <textarea
+            className="w-full rounded border px-3 py-2 font-mono text-sm whitespace-pre-wrap"
+            rows={12}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
           <div className="flex gap-2">
             <CopyButton text={message} />
             <button

@@ -93,7 +93,7 @@ export default function SettingsPage() {
         <ul className="space-y-2">
           <li key={template.id} className="rounded border bg-white p-3">
             <div className="flex items-center justify-between">
-              <p className="font-medium">{template.opening.trim() || "（冒頭未設定）"}</p>
+              <p className="font-medium">{template.title.trim() || "（冒頭未設定）"}</p>
               <div className="flex gap-2">
                 <button
                   type="button"
