@@ -6,7 +6,7 @@ import type { TemplateType } from "@/lib/db";
 export type TemplatePayload = {
   id?: number;
   type: TemplateType;
-  opening: string;
+  title: string;
   items: string[];
 };
 
@@ -18,7 +18,7 @@ type Props = {
 };
 
 export default function TemplateForm({ type, initialValue, onSave, onCancel }: Props) {
-  const [opening, setOpening] = useState(initialValue?.opening ?? "");
+  const [title, setTitle] = useState(initialValue?.title ?? "");
   const [items, setItems] = useState<string[]>(
     initialValue?.items.length ? initialValue.items : [""],
   );
@@ -42,11 +42,11 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
       await onSave({
         id: initialValue?.id,
         type,
-        opening: opening.trim(),
+        title: title.trim(),
         items,
       });
       if (!initialValue) {
-        setOpening("");
+        setTitle("");
         setItems([""]);
       }
     } finally {
@@ -57,11 +57,12 @@ export default function TemplateForm({ type, initialValue, onSave, onCancel }: P
   return (
     <form onSubmit={submit} className="space-y-3 rounded border bg-white p-4">
       <h3 className="font-semibold">{initialValue ? `${heading}編集` : `${heading}新規作成`}</h3>
-      <input
+      <textarea
         className="w-full rounded border px-3 py-2"
-        placeholder="冒頭テキストを入力（例: おはようございます。本日もよろしくお願いします。）"
-        value={opening}
-        onChange={(e) => setOpening(e.target.value)}
+        placeholder={"冒頭テキストを入力（例: おはようございます。\n本日もよろしくお願いします。）"}
+        rows={3}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
         required
       />
       <div className="space-y-2">

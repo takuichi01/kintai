@@ -18,7 +18,7 @@ db.exec(`
 CREATE TABLE IF NOT EXISTS templates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL UNIQUE,
-  opening TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -74,15 +74,15 @@ const templateColumns = db.prepare("PRAGMA table_info(templates)").all() as { na
 const hasOpeningColumn = templateColumns.some((column) => column.name === "opening");
 const hasTitleColumn = templateColumns.some((column) => column.name === "title");
 
-if (!hasOpeningColumn) {
-  db.exec("ALTER TABLE templates ADD COLUMN opening TEXT DEFAULT ''");
+if (!hasTitleColumn) {
+  db.exec("ALTER TABLE templates ADD COLUMN title TEXT DEFAULT ''");
 }
 
-if (hasTitleColumn) {
-  db.exec("UPDATE templates SET opening = title WHERE opening = ''");
+if (hasOpeningColumn) {
+  db.exec("UPDATE templates SET title = opening WHERE title = '' OR title IS NULL");
 }
 
-db.exec("UPDATE templates SET opening = '' WHERE opening IS NULL");
+db.exec("UPDATE templates SET title = '' WHERE title IS NULL");
 
 db.exec(`
   DELETE FROM templates
@@ -103,7 +103,7 @@ db.exec("CREATE UNIQUE INDEX IF NOT EXISTS templates_type_unique_idx ON template
 export type Template = {
   id: number;
   type: TemplateType;
-  opening: string;
+  title: string;
   items: string[];
 };
 
@@ -155,12 +155,12 @@ export function getOrCreateAttendance(date = getTodayDate()): number {
 export function getTemplates(type?: TemplateType): Template[] {
   const rows = (type
     ? db
-        .prepare("SELECT id, type, opening FROM templates WHERE type = ? ORDER BY updated_at DESC, id DESC")
+        .prepare("SELECT id, type, title FROM templates WHERE type = ? ORDER BY updated_at DESC, id DESC")
         .all(type)
-    : db.prepare("SELECT id, type, opening FROM templates ORDER BY updated_at DESC, id DESC").all()) as {
+    : db.prepare("SELECT id, type, title FROM templates ORDER BY updated_at DESC, id DESC").all()) as {
     id: number;
     type: TemplateType;
-    opening: string;
+    title: string;
   }[];
 
   const itemStmt = db
@@ -180,31 +180,31 @@ export function getLatestTemplate(type: TemplateType): Template | null {
 export function saveTemplate(params: {
   id?: number;
   type: TemplateType;
-  opening: string;
+  title: string;
   items: string[];
 }): Template {
-  const opening = params.opening.trim();
+  const title = (params.title ?? "").trim();
   const cleanedItems = params.items
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
 
   if (params.id) {
-    db.prepare("UPDATE templates SET type = ?, opening = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+    db.prepare("UPDATE templates SET type = ?, title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
       params.type,
-      opening,
+      title,
       params.id,
     );
   } else {
     db.prepare(
       `
-      INSERT INTO templates (type, opening, updated_at)
+      INSERT INTO templates (type, title, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(type)
       DO UPDATE SET
-        opening = excluded.opening,
+        title = excluded.title,
         updated_at = CURRENT_TIMESTAMP
       `,
-    ).run(params.type, opening);
+    ).run(params.type, title);
   }
 
   const templateRow = db.prepare("SELECT id FROM templates WHERE type = ? LIMIT 1").get(params.type) as
