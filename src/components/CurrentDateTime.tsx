@@ -16,12 +16,15 @@ function formatNow(now: Date): string {
 }
 
 export default function CurrentDateTime() {
-  const [now, setNow] = useState<Date>(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  if (!now) return null;
 
   return <p className="text-sm text-gray-600">{formatNow(now)}</p>;
 }
